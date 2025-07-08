@@ -1,0 +1,600 @@
+{
+  "name": "Youtube agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1180,
+        -300
+      ],
+      "id": "b1a25f12-caeb-4484-bb82-38f08c952611",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ",
+          "mode": "list",
+          "cachedResultName": "Youtube Transcriptions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "next"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1000,
+        -300
+      ],
+      "id": "81c7a78b-b64a-45e9-b859-74f92c69df1c",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dwRZxFpbyR1gkZ6t",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -800,
+        -300
+      ],
+      "id": "8606619e-d81c-44c1-8127-79640c3a8735",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bb743504-6a88-4df0-922d-15dcb1fdf64e",
+              "name": "video link",
+              "value": "={{ $json['video link'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        -100
+      ],
+      "id": "f90c1a07-caeb-4fa7-a55d-6492e96bb238",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get video link from input data (corrected field name)\nconst videoLink = $json[\"video link\"];\n\n// Initialize videoId\nlet videoId = null;\n\n// Proceed only if videoLink is defined\nif (videoLink && typeof videoLink === 'string') {\n  if (videoLink.includes(\"youtu.be/\")) {\n    // Handle short links\n    const match = videoLink.match(/youtu\\.be\\/([^?&]+)/);\n    videoId = match ? match[1] : null;\n  } else {\n    // Handle full links\n    const match = videoLink.match(/[?&]v=([^&]+)/);\n    videoId = match ? match[1] : null;\n  }\n}\n\n// Return both values\nreturn [\n  {\n    json: {\n      videoLink,\n      videoId\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        -100
+      ],
+      "id": "50668f80-17bf-4a98-a0ff-ac3564ae20ba",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-video-summarizer-gpt-ai.p.rapidapi.com/api/v1/get-transcript-v2",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $json.videoId }}"
+            },
+            {
+              "name": "platform",
+              "value": "youtube"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-video-summarizer-gpt-ai.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "63c46e9a0dmshf8304c8fceefe4cp1d80a9jsn2830bd860721"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        -100
+      ],
+      "id": "5ddf9f21-5681-4b63-a443-33e69dafa591",
+      "name": "Get Transcripts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bfdca188-f1a4-4c80-a703-570921115663",
+              "name": "data.transcripts",
+              "value": "={{ $json.data.transcripts }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -40,
+        -100
+      ],
+      "id": "3e09b818-b3cc-463f-96a0-0f1909c8276e",
+      "name": "Extract Transcripts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcriptChunks = items[0].json.data.transcripts.hi_auto.custom;\nlet combinedtranscript = ' ';\nfor (const chunk of transcriptChunks) {\n  if (chunk.text) {\n    combinedtranscript += chunk.text.trim() + ' ';\n  }\n}\nreturn [\n  {\n    json: {\n      combinedtranscript: combinedtranscript.trim()\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -100
+      ],
+      "id": "c4b4df7d-1054-46e8-b646-46249191b23c",
+      "name": "combine transcripts"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.combinedtranscript }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "YOU ARE AGENT: THE WORLD’S LEADING EXPERT IN YOUTUBE VIDEO DESCRIPTIONS & SEO META TAGS.\n\nYour job is to transform summarized transcripts or full video content into powerful, algorithm-optimized YouTube video descriptions that:\n- Boost discoverability (via SEO and keyword usage),\n- Increase click-through rate (CTR),\n- Improve audience retention and engagement,\n- Help videos rank better in YouTube and Google search.\n\n🎯 GOALS:\n1. Grab attention within the first 2 lines — this is the hook that appears above the fold.\n2. Summarize the key message of the video clearly in 3–6 sentences.\n3. Use simple, engaging, natural-sounding language.\n4. Include CTA (Call-To-Action) lines like:\n   - “Subscribe for more!”\n   - “Watch next: [suggest a related topic if appropriate]”\n   - “Join the conversation in the comments below!”\n\n🟩 YOUR OUTPUT SHOULD INCLUDE 3 PARTS:\n\n---\n\n📄 **Description**  \nWrite a compelling YouTube description using the transcript. Follow this structure:\n- 1–2 lines: Hook — immediately grab attention.\n- 3–6 lines: Video summary — explain what the video is about and what viewers will learn or gain.\n- 1–2 lines: CTA — encourage actions (subscribe, comment, watch next).\n\n---\n\n🔍 **SEO Meta Tags**  \nList 7–15 comma-separated keywords that best describe the video and would help it rank in search engines. These should include high-value search terms based on the transcript.\n\n---\n\n#️⃣ **Hashtags**  \nProvide 5–10 YouTube-optimized hashtags that are relevant to the content. Format them like: `#keyword`, `#shorts` (if it’s a short), `#topicName`.\n\n---\n\n🎬 **INPUT TRANSCRIPT (for you to use):**\n\"\"\"\n{{ $json.combinedTranscript }}\n\"\"\"\nAnd whatever the language of the transcription is i want you to give me description only in english."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        340,
+        -100
+      ],
+      "id": "b03a95dd-a1f5-4fe6-b797-8d23ba6c1275",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        340,
+        100
+      ],
+      "id": "e41b8867-d2d2-4fe9-9fd9-62f9cac55266",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "EFdAQF7LdlpAees3",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}\n\nYou are agent: you are the best youtube video title creator. i want to give me 10 different titles extremely viral and worthy titles for the above given description of the video. \nsee towards it that you include almost everything in your title like shock, fear, excitement etc. and title also contains the keywords that used for SEO. output contains only text that was ten titles excluding extra text. ",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        860,
+        -100
+      ],
+      "id": "5a8b3fd4-2438-4fd3-8881-d9f71a7defd9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        880,
+        120
+      ],
+      "id": "2f141f83-9cf0-4c1d-a2b7-2b6c1c45e41c",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "EFdAQF7LdlpAees3",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Example input text (replace with your dynamic value or pass from previous node)\nconst rawText = $json.text;\n\n// Clean the text\nconst cleanedText = rawText\n  .replace(/\\\\n/g, ' ')     // Replace \\n with space\n  .replace(/\\s+/g, ' ')     // Collapse multiple spaces\n  .trim();                  // Remove leading/trailing spaces\n\n// Return cleaned text\nreturn [\n  {\n    json: {\n      text: cleanedText\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        -100
+      ],
+      "id": "661420fe-f239-44b3-8662-5d87b6842eba",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const raw = item.json.output;\n\n  // Match full titles using numbers followed by a period and quoted string\n  const matches = raw.match(/\\d+\\.\\s\"[^\"]+\"/g);\n\n  // Remove the number prefix and quotes if you want only the sentence\n  const cleanedTitles = (matches || []).map(title =>\n    title.replace(/\\d+\\.\\s\"/, '').replace(/\"$/, '').trim()\n  );\n\n  return {\n    json: {\n      titles: cleanedTitles\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -100
+      ],
+      "id": "35161929-6bd6-4023-b36e-ac577d65f705",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ",
+          "mode": "list",
+          "cachedResultName": "Youtube Transcriptions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VkDyQDBEUgYtGYlwaAECgL3L_ZOi8k43VxX5GLUZSaQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "description": "={{ $('Code1').item.json.text }}",
+            "titles": "={{ $json.titles }}",
+            "video link": "={{ $('Edit Fields').item.json['video link'] }}"
+          },
+          "matchingColumns": [
+            "video link"
+          ],
+          "schema": [
+            {
+              "id": "video link",
+              "displayName": "video link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titles",
+              "displayName": "titles",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1400,
+        140
+      ],
+      "id": "daf8527e-0562-45c4-801f-62eaf8d3dda8",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dwRZxFpbyR1gkZ6t",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "nabihamalik723@gmail.com",
+        "subject": "Your video material is ready",
+        "emailType": "text",
+        "message": "=Description:  {{ $('Code1').item.json.text }}\nTitles: \n{{ $json.title }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1360,
+        -240
+      ],
+      "id": "41afe22a-1940-4d35-90fa-a88945db0be5",
+      "name": "Send a message",
+      "webhookId": "48a95283-4b3b-41e4-b884-4be5c2f937d9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ulhU9l40ERhxkZuL",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Get Transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcripts": {
+      "main": [
+        [
+          {
+            "node": "Extract Transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Transcripts": {
+      "main": [
+        [
+          {
+            "node": "combine transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "combine transcripts": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c39c522e-d05f-4b83-b829-d9254b8eb7f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0a26096b77501de992ec789db08c5d2f5012aa3d47df6cd6fa5165b81bb35bef"
+  },
+  "id": "I0DLA8CTwEWK55Kb",
+  "tags": []
+}
