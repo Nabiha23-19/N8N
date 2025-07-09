@@ -1,0 +1,260 @@
+{
+  "name": "Lead Generation instagram scrapper",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Instagram Lead Scrapper",
+        "formDescription": "Get all the leads for instagram directly to airtable.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Who are you looking for?"
+            },
+            {
+              "fieldLabel": "Location"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        -40
+      ],
+      "id": "70ed07c6-d329-42dc-934a-e8791980aacf",
+      "name": "On form submission",
+      "webhookId": "df36b67c-4fe5-4631-abe4-7a2c5871252c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=apify_api_z9FPMv9IleHMr0ZLnQ6IRsVAe2AsAa2kNPsT",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"focusOnPaidAds\": false,\n    \"forceExactMatch\": false,\n    \"includeIcons\": false,\n    \"includeUnfilteredResults\": false,\n    \"maxPagesPerQuery\": 1,\n    \"mobileResults\": false,\n    \"queries\": \"site:instagram.com +{{ $json['Who are you looking for?'] }} {{ $json.Location }} \",\n    \"resultsPerPage\": 100,\n    \"saveHtml\": false,\n    \"saveHtmlToKeyValueStore\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -180,
+        -40
+      ],
+      "id": "124d97a4-c327-471d-9dd3-e4fa13d872df",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allResults = [];\n\nfor (const item of items) {\n  const organicResults = item.json.organicResults || [];\n\n  const instagramProfiles = organicResults\n    .filter(result => result.channelName && result.type === 'organic')\n    .map(result => {\n      const username = result.channelName;\n      return {\n        name: result.title || null,\n        username: username,\n        instagramUrl: `https://www.instagram.com/${username}/`,\n        description: result.snippet || null,\n        followers: result.followersAmount || null,\n        position: result.position || null,\n        type: result.type\n      };\n    });\n\n  allResults.push(...instagramProfiles);\n}\n\nreturn [{\n  json: {\n    profiles: allResults\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        -40
+      ],
+      "id": "467d4dfd-d82c-46a5-80a2-922068e09070",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appEJ2fyKz1ADJk5o",
+          "mode": "list",
+          "cachedResultName": "Lead Generation",
+          "cachedResultUrl": "https://airtable.com/appEJ2fyKz1ADJk5o"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblJ7SOHzg13L3jL2",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appEJ2fyKz1ADJk5o/tblJ7SOHzg13L3jL2"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $json.profiles[0].name }}",
+            "username": "={{ $json.profiles[0].username }}",
+            "handle": "={{ $json.profiles[0].instagramUrl }}",
+            "description": "={{ $json.profiles[0].description }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "handle",
+              "displayName": "handle",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Todo",
+                  "value": "Todo"
+                },
+                {
+                  "name": "In progress",
+                  "value": "In progress"
+                },
+                {
+                  "name": "Done",
+                  "value": "Done"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "followers",
+              "displayName": "followers",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "position",
+              "displayName": "position",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "profile",
+              "displayName": "profile",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        -40
+      ],
+      "id": "9700c1fc-32d5-451c-9fc8-8be22e039475",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "89SYMh3OYvJ7IN4v",
+          "name": "Airtable Personal Access Token account 4"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4e4ace2f-be54-4447-9e76-e90b90233c4a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0a26096b77501de992ec789db08c5d2f5012aa3d47df6cd6fa5165b81bb35bef"
+  },
+  "id": "EhxD7KvPfLaCK66O",
+  "tags": []
+}
